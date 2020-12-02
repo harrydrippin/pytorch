@@ -85,10 +85,11 @@ class RandomSampler(Sampler[int]):
     replacement: bool
 
     def __init__(self, data_source: Sized, replacement: bool = False,
-                 num_samples: Optional[int] = None, generator=None) -> None:
+                 num_samples: Optional[int] = None, chunk_size: int = 32, generator=None) -> None:
         self.data_source = data_source
         self.replacement = replacement
         self._num_samples = num_samples
+        self.chunk_size = chunk_size
         self.generator = generator
 
         if not isinstance(self.replacement, bool):
@@ -118,9 +119,9 @@ class RandomSampler(Sampler[int]):
         else:
             generator = self.generator
         if self.replacement:
-            for _ in range(self.num_samples // 32):
-                yield from torch.randint(high=n, size=(32,), dtype=torch.int64, generator=generator).tolist()
-            yield from torch.randint(high=n, size=(self.num_samples % 32,), dtype=torch.int64, generator=generator).tolist()
+            for _ in range(self.num_samples // self.chunk_size):
+                yield from torch.randint(high=n, size=(self.chunk_size,), dtype=torch.int64, generator=generator).tolist()
+            yield from torch.randint(high=n, size=(self.num_samples % self.chunk_size,), dtype=torch.int64, generator=generator).tolist()
         else:
             yield from torch.randperm(n, generator=self.generator).tolist()
 
